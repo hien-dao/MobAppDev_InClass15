@@ -61,6 +61,14 @@ class _QuizScreenState extends State<QuizScreen> {
     _selectedAnswer = null;
   }
 
+  int _pointsForDifficulty(String difficulty) {
+    switch (difficulty) {
+      case 'HARD':   return 3;
+      case 'MEDIUM': return 2;
+      default:       return 1; // EASY / fallback
+    }
+  }
+
   void _onAnswerTap(String answer) {
     if (_answered) return;
 
@@ -68,10 +76,10 @@ class _QuizScreenState extends State<QuizScreen> {
     setState(() {
       _selectedAnswer = answer;
       _answered = true;
-      if (answer == correct) _score++;
+      if (answer == correct) {
+        _score += _pointsForDifficulty(_questions[_currentIndex].difficulty);
+      }
     });
-
-    Future.delayed(const Duration(milliseconds: 1500), _nextQuestion);
   }
 
   void _nextQuestion() {
@@ -156,6 +164,23 @@ class _QuizScreenState extends State<QuizScreen> {
                 child: Text(option),
               ),
             )),
+            // At the bottom of the answer list, show when _answered == true:
+            if (_answered)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: ElevatedButton(
+                  onPressed: _nextQuestion,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal.shade700,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(
+                    _currentIndex + 1 == _questions.length ? 'See Results →' : 'Next Question →',
+                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
