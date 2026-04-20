@@ -80,6 +80,16 @@ class _QuizScreenState extends State<QuizScreen> {
         _score += _pointsForDifficulty(_questions[_currentIndex].difficulty);
       }
     });
+    final isCorrect = answer == correct;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(isCorrect ? '✅ Correct!' : '❌ Wrong! Correct: $correct'),
+        backgroundColor: isCorrect ? Colors.green.shade700 : Colors.red.shade700,
+        duration: const Duration(milliseconds: 1200),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   void _nextQuestion() {
@@ -107,6 +117,14 @@ class _QuizScreenState extends State<QuizScreen> {
     if (option == correct) return Colors.green.shade100;
     if (option == _selectedAnswer) return Colors.red.shade100;
     return Colors.grey.shade100;
+  }
+
+  Color _buttonBorder(String option) {
+    if (!_answered) return Colors.grey.shade300;
+    final correct = _questions[_currentIndex].correctAnswer;
+    if (option == correct) return Colors.green.shade400;
+    if (option == _selectedAnswer) return Colors.red.shade400;
+    return Colors.grey.shade300;
   }
 
   @override
@@ -138,6 +156,7 @@ class _QuizScreenState extends State<QuizScreen> {
     }
 
     final question = _questions[_currentIndex];
+    final progress = (_currentIndex + 1) / _questions.length;
 
     return Scaffold(
       appBar: AppBar(
@@ -154,16 +173,60 @@ class _QuizScreenState extends State<QuizScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(question.question, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            ..._currentAnswers.map((option) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: ElevatedButton(
-                onPressed: () => _onAnswerTap(option),
-                style: ElevatedButton.styleFrom(backgroundColor: _buttonColor(option)),
-                child: Text(option),
-              ),
-            )),
+            // Progress bar
+            LinearProgressIndicator(value: progress, minHeight: 6, color: Colors.teal.shade600),
+
+            // Question
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Category & difficulty chip row
+                    Wrap(spacing: 8, children: [
+                      Chip(label: Text(question.category, style: const TextStyle(fontSize: 12))),
+                      Chip(label: Text(question.difficulty.toUpperCase(), style: const TextStyle(fontSize: 12))),
+                    ]),
+                    const SizedBox(height: 20),
+
+                    // Question text
+                    Text(question.question, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, height: 1.4)),
+                    const SizedBox(height: 28),
+
+                    // Answer buttons
+                    ..._currentAnswers.map((opt) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        decoration: BoxDecoration(
+                          color: _buttonColor(opt),
+                          border: Border.all(color: _buttonBorder(opt), width: 1.5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: InkWell(
+                          onTap: () => _onAnswerTap(opt),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+                            child: Row(
+                              children: [
+                                Expanded(child: Text(opt, style: const TextStyle(fontSize: 16))),
+                                if (_answered && opt == _questions[_currentIndex].correctAnswer)
+                                  const Icon(Icons.check_circle, color: Colors.green),
+                                if (_answered && opt == _selectedAnswer && opt != _questions[_currentIndex].correctAnswer)
+                                  const Icon(Icons.cancel, color: Colors.red),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    )),
+                  ],
+                ),
+              )
+            ),
+
             // At the bottom of the answer list, show when _answered == true:
             if (_answered)
               Padding(
